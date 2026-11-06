@@ -41,6 +41,8 @@ namespace BsaPacker
 			return;
 		}
 
+		// Prefer native Bethesda archive builders when present; the game-provided
+		// handler is a fallback, with different companion-file responsibilities.
 		const bool useBuiltInArchiveTools = this->m_ModContext != nullptr && this->m_ModContext->CanUseBuiltInArchiveTools();
 		const bool useArchiveHandler = this->m_ModContext != nullptr && !useBuiltInArchiveTools && this->m_ModContext->HasArchiveCreationHandler();
 		if (!useBuiltInArchiveTools && !useArchiveHandler) {
@@ -68,6 +70,8 @@ namespace BsaPacker
 			}
 		} else {
 			const QString archivePath = QDir(modDto->Directory()).filePath(modDto->ArchiveName() + modDto->ArchiveExtension());
+			// The custom handler writes directly to this destination. Existing output
+			// is removed first; failure to create a replacement does not restore it.
 			const QFileInfo existingArchiveInfo(archivePath);
 			if (existingArchiveInfo.exists() && existingArchiveInfo.isFile() && !QFile::remove(archivePath)) {
 				QMessageBox::warning(nullptr, QString(),
@@ -95,6 +99,8 @@ namespace BsaPacker
 			}
 		}
 
+		// Only the built-in Bethesda workflow creates its dummy plugin; generic
+		// game-specific formats must not inherit that side effect.
 		if (useBuiltInArchiveTools) {
 			const std::unique_ptr<IDummyPluginService> pluginService = this->m_DummyPluginServiceFactory->Create();
 			pluginService->CreatePlugin(modDto->Directory(), modDto->ArchiveName());
